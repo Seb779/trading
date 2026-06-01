@@ -49,3 +49,42 @@ export async function triggerRefresh(ticker = null) {
   if (!res.ok) throw new Error('Erreur refresh')
   return res.json()
 }
+
+// ── Portfolio ────────────────────────────────────────────
+export async function fetchPortfolio() {
+  const res = await fetch(`${BASE}/portfolio`)
+  if (!res.ok) throw new Error('Erreur portfolio')
+  return res.json()
+}
+
+export async function fetchPortfolioSummary() {
+  const res = await fetch(`${BASE}/portfolio/summary`)
+  if (!res.ok) throw new Error('Erreur portfolio summary')
+  return res.json()
+}
+
+export async function addPosition(position) {
+  const res = await fetch(`${BASE}/positions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(position),
+  })
+  if (!res.ok) throw new Error('Erreur ajout position')
+  return res.json()
+}
+
+export async function updatePosition(id, update) {
+  const res = await fetch(`${BASE}/positions/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(update),
+  })
+  if (!res.ok) throw new Error('Erreur mise à jour position')
+  return res.json()
+}
+
+export async function deletePosition(id) {
+  const res = await fetch(`${BASE}/positions/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Erreur suppression position')
+  return res.json()
+}

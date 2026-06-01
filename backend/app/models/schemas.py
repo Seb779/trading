@@ -13,7 +13,7 @@ class AssetDB(Base):
     __tablename__ = "assets"
     ticker = Column(String, primary_key=True)
     name = Column(String)
-    category = Column(String)  # swiss / tech / etf / crypto
+    category = Column(String)
     added_at = Column(DateTime, default=datetime.utcnow)
 
 
@@ -27,7 +27,7 @@ class SignalDB(Base):
     score_sentiment = Column(Float)
     score_ml = Column(Float)
     score_composite = Column(Float)
-    signal = Column(String)   # BUY / HOLD / SELL
+    signal = Column(String)
     rsi = Column(Float)
     macd = Column(Float)
     macd_signal = Column(Float)
@@ -37,6 +37,19 @@ class SignalDB(Base):
     bb_lower = Column(Float)
     sentiment_label = Column(String)
     notes = Column(Text, nullable=True)
+
+
+class PositionDB(Base):
+    __tablename__ = "positions"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ticker = Column(String, index=True)
+    name = Column(String)
+    quantity = Column(Float)
+    buy_price = Column(Float)
+    buy_date = Column(DateTime)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
 
 
 # ── Pydantic Schemas ─────────────────────────────────────────────────────────
@@ -72,6 +85,53 @@ class SignalSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PositionCreate(BaseModel):
+    ticker: str
+    name: Optional[str] = None
+    quantity: float
+    buy_price: float
+    buy_date: datetime
+    notes: Optional[str] = None
+
+
+class PositionUpdate(BaseModel):
+    quantity: Optional[float] = None
+    buy_price: Optional[float] = None
+    buy_date: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
+class PositionSchema(BaseModel):
+    id: int
+    ticker: str
+    name: Optional[str]
+    quantity: float
+    buy_price: float
+    buy_date: datetime
+    notes: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class PortfolioRow(BaseModel):
+    id: int
+    ticker: str
+    name: Optional[str]
+    quantity: float
+    buy_price: float
+    buy_date: datetime
+    current_price: Optional[float]
+    current_value: Optional[float]
+    invested_value: float
+    pnl: Optional[float]
+    pnl_pct: Optional[float]
+    signal: Optional[str]
+    score_composite: Optional[float]
+    notes: Optional[str]
 
 
 class ScreenerRow(BaseModel):

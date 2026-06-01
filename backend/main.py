@@ -11,6 +11,7 @@ from contextlib import asynccontextmanager
 from app.core.database import init_db
 from app.core.scheduler import start_scheduler
 from app.api.routes import router
+from app.api.portfolio_routes import portfolio_router
 from app.core.config import settings
 from app.models.schemas import AssetDB
 from app.core.database import AsyncSessionLocal
@@ -69,6 +70,7 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix="/api/v1")
+app.include_router(portfolio_router, prefix="/api/v1")
 
 
 @app.get("/health")
