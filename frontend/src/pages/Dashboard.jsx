@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { RefreshCw, TrendingUp, TrendingDown, Minus, Filter } from 'lucide-react'
+import { RefreshCw, TrendingUp, TrendingDown, Minus, Filter, ListPlus } from 'lucide-react'
 import { fetchScreener, fetchSummary, triggerRefresh } from '../utils/api'
 import { SignalBadge } from '../components/SignalBadge'
 import { ScoreBar } from '../components/ScoreBar'
 import { DetailModal } from '../components/DetailModal'
+import { WatchlistModal } from '../components/WatchlistModal'
 
 const CATEGORIES = ['Tous', 'swiss', 'tech', 'etf', 'crypto']
 const SIGNALS = ['Tous', 'BUY', 'HOLD', 'SELL']
@@ -16,6 +17,7 @@ export function Dashboard() {
   const [filterSignal, setFilterSignal] = useState('Tous')
   const [filterCat, setFilterCat] = useState('Tous')
   const [selected, setSelected] = useState(null)
+  const [showWatchlist, setShowWatchlist] = useState(false)
   const [lastUpdate, setLastUpdate] = useState(null)
 
   const load = useCallback(async () => {
@@ -45,6 +47,10 @@ export function Dashboard() {
     setTimeout(() => { load(); setRefreshing(false) }, 2000)
   }
 
+  const handleWatchlistUpdated = () => {
+    load()
+  }
+
   const sortedRows = [...rows].sort((a, b) => b.score_composite - a.score_composite)
 
   return (
@@ -64,6 +70,10 @@ export function Dashboard() {
               Mis à jour {lastUpdate.toLocaleTimeString('fr-CH', { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
+          <button className="btn-watchlist" onClick={() => setShowWatchlist(true)} title="Gérer la watchlist">
+            <ListPlus size={14} />
+            <span className="btn-watchlist-label">Watchlist</span>
+          </button>
           <button className={`btn-refresh ${refreshing ? 'spinning' : ''}`} onClick={handleRefresh}>
             <RefreshCw size={14} />
           </button>
@@ -184,6 +194,12 @@ export function Dashboard() {
       </div>
 
       {selected && <DetailModal ticker={selected} onClose={() => setSelected(null)} />}
+      {showWatchlist && (
+        <WatchlistModal
+          onClose={() => setShowWatchlist(false)}
+          onUpdated={handleWatchlistUpdated}
+        />
+      )}
     </div>
   )
 }

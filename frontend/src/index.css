@@ -239,3 +239,203 @@ h1 .accent { color: var(--accent); }
   h1 { font-size: 1.2rem; }
   .modal-panel { padding: 16px; }
 }
+
+/* ── Watchlist Button ─────────────────────────────────── */
+.btn-watchlist {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.btn-watchlist:hover { background: var(--accent); color: #fff; }
+.btn-watchlist-label { display: none; }
+@media (min-width: 480px) { .btn-watchlist-label { display: inline; } }
+
+/* ── Watchlist Modal ──────────────────────────────────── */
+.wl-panel { max-width: 580px; gap: 16px; }
+
+.wl-section-title {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+.wl-add-form {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.wl-form-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wl-input {
+  flex: 1;
+  min-width: 100px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.wl-input:focus { border-color: var(--accent); }
+.wl-input::placeholder { color: var(--text-muted); }
+
+.wl-select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 8px 10px;
+  outline: none;
+  cursor: pointer;
+}
+.wl-select:focus { border-color: var(--accent); }
+
+.wl-btn-add {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.wl-btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
+.wl-btn-add:hover:not(:disabled) { opacity: 0.85; }
+
+.wl-error {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--sell);
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  margin-top: 8px;
+}
+
+.wl-suggestions {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.wl-suggestions-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.wl-suggestion-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.wl-suggestion-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Watchlist List ───────────────────────────────────── */
+.wl-list-section { display: flex; flex-direction: column; gap: 10px; }
+
+.wl-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wl-search {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+}
+.wl-search-input {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  outline: none;
+  width: 120px;
+}
+.wl-search-input::placeholder { color: var(--text-muted); }
+
+.wl-list {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+}
+.wl-list::-webkit-scrollbar { width: 4px; }
+.wl-list::-webkit-scrollbar-track { background: var(--surface-2); }
+.wl-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.wl-group { display: flex; flex-direction: column; gap: 4px; }
+.wl-group-label {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+
+.wl-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: border-color 0.12s;
+}
+.wl-item:hover { border-color: var(--accent); }
+.wl-item-info { display: flex; align-items: center; gap: 10px; }
+.wl-item-ticker { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 500; color: var(--text); }
+.wl-item-name { font-size: 0.68rem; color: var(--text-muted); }
+
+.wl-btn-remove {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-muted);
+  padding: 4px 6px;
+  cursor: pointer;
+  display: flex; align-items: center;
+  transition: all 0.15s;
+}
+.wl-btn-remove:hover { border-color: var(--sell); color: var(--sell); }
+.wl-btn-remove:disabled { opacity: 0.4; cursor: not-allowed; }
