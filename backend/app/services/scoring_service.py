@@ -72,7 +72,6 @@ def analyze_ticker(ticker: str) -> Optional[dict]:
 
     return {
         "ticker": ticker,
-        "name": name,
         "timestamp": datetime.utcnow(),
         "price": price,
         "score_technical": s_tech,

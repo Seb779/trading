@@ -106,7 +106,7 @@ def predict_prophet(df: pd.DataFrame, days_ahead: int = 5) -> Optional[float]:
             yearly_seasonality=True,
             changepoint_prior_scale=0.05,
         )
-        model.fit(close, verbose=False)
+        import logging as _log; _log.getLogger("prophet").setLevel(_log.ERROR); _log.getLogger("cmdstanpy").setLevel(_log.ERROR); model.fit(close)
 
         future = model.make_future_dataframe(periods=days_ahead)
         forecast = model.predict(future)
