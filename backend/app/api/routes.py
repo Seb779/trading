@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.models.schemas import SignalDB, AssetDB, SignalSchema, AssetSchema, ScreenerRow
 from app.core.config import settings
 from app.services.scoring_service import analyze_ticker
+from app.core.database import AsyncSessionLocal
 from typing import List, Optional
 import logging
 
@@ -40,7 +41,7 @@ async def remove_asset(ticker: str, db: AsyncSession = Depends(get_db)):
     return {"deleted": ticker}
 
 
-# ── Screener (derniers signaux par ticker) ───────────────────────────────────
+# ── Screener (derniers signaux — uniquement les tickers de la watchlist) ─────
 
 @router.get("/screener", response_model=List[ScreenerRow])
 async def get_screener(
@@ -54,10 +55,11 @@ async def get_screener(
         .group_by(SignalDB.ticker)
         .subquery()
     )
+    # INNER JOIN avec AssetDB → seuls les tickers de la watchlist apparaissent
     q = (
         select(SignalDB, AssetDB)
         .join(subq, (SignalDB.ticker == subq.c.ticker) & (SignalDB.timestamp == subq.c.max_ts))
-        .join(AssetDB, AssetDB.ticker == SignalDB.ticker, isouter=True)
+        .join(AssetDB, AssetDB.ticker == SignalDB.ticker, isouter=False)
     )
     if signal:
         q = q.where(SignalDB.signal == signal.upper())
@@ -71,8 +73,8 @@ async def get_screener(
     for sig, asset in rows:
         screener.append(ScreenerRow(
             ticker=sig.ticker,
-            name=asset.name if asset else sig.ticker,
-            category=asset.category if asset else "unknown",
+            name=asset.name,
+            category=asset.category,
             price=sig.price,
             signal=sig.signal,
             score_composite=sig.score_composite,
@@ -86,6 +88,21 @@ async def get_screener(
             timestamp=sig.timestamp,
         ))
     return screener
+
+
+# ── Tickers sans signal (watchlist mais pas encore analysés) ─────────────────
+
+@router.get("/assets/pending")
+async def get_pending_assets(db: AsyncSession = Depends(get_db)):
+    """Retourne les tickers dans la watchlist sans signal calculé."""
+    assets_result = await db.execute(select(AssetDB.ticker))
+    all_tickers = {row[0] for row in assets_result.all()}
+
+    signals_result = await db.execute(select(SignalDB.ticker).distinct())
+    computed_tickers = {row[0] for row in signals_result.all()}
+
+    pending = all_tickers - computed_tickers
+    return {"pending": list(pending), "count": len(pending)}
 
 
 # ── Historique d'un ticker ───────────────────────────────────────────────────
@@ -104,11 +121,11 @@ async def get_signals(ticker: str, limit: int = 48, db: AsyncSession = Depends(g
 # ── Refresh manuel ───────────────────────────────────────────────────────────
 
 @router.post("/refresh/{ticker}")
-async def refresh_ticker(ticker: str, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def refresh_ticker(ticker: str, background_tasks: BackgroundTasks):
     async def _run():
         result = analyze_ticker(ticker)
         if result:
-            async with db as session:
+            async with AsyncSessionLocal() as session:
                 session.add(SignalDB(**result))
                 await session.commit()
     background_tasks.add_task(_run)
@@ -122,17 +139,23 @@ async def refresh_all(background_tasks: BackgroundTasks):
     return {"message": "Refresh global lancé"}
 
 
-# ── Stats summary ────────────────────────────────────────────────────────────
+# ── Stats summary (uniquement watchlist) ─────────────────────────────────────
 
 @router.get("/summary")
 async def get_summary(db: AsyncSession = Depends(get_db)):
+    # Récupère les tickers de la watchlist
+    assets_result = await db.execute(select(AssetDB.ticker))
+    watchlist_tickers = {row[0] for row in assets_result.all()}
+
     subq = (
         select(SignalDB.ticker, func.max(SignalDB.timestamp).label("max_ts"))
         .group_by(SignalDB.ticker)
         .subquery()
     )
-    q = select(SignalDB).join(
-        subq, (SignalDB.ticker == subq.c.ticker) & (SignalDB.timestamp == subq.c.max_ts)
+    q = (
+        select(SignalDB)
+        .join(subq, (SignalDB.ticker == subq.c.ticker) & (SignalDB.timestamp == subq.c.max_ts))
+        .where(SignalDB.ticker.in_(watchlist_tickers))
     )
     result = await db.execute(q)
     signals = result.scalars().all()
@@ -142,7 +165,7 @@ async def get_summary(db: AsyncSession = Depends(get_db)):
         counts[s.signal] = counts.get(s.signal, 0) + 1
 
     return {
-        "total": len(signals),
+        "total": len(watchlist_tickers),
         "buy": counts["BUY"],
         "hold": counts["HOLD"],
         "sell": counts["SELL"],

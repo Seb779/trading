@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { X, Plus, Trash2, Search, AlertCircle } from 'lucide-react'
-import { fetchAssets, addAsset, removeAsset } from '../utils/api'
+import { X, Plus, Trash2, Search, AlertCircle, RefreshCw } from 'lucide-react'
+import { fetchAssets, addAsset, removeAsset, triggerRefresh } from '../utils/api'
 
 const CATEGORIES = ['swiss', 'tech', 'etf', 'crypto', 'other']
 
@@ -34,13 +34,13 @@ export function WatchlistModal({ onClose, onUpdated }) {
   const [name, setName] = useState('')
   const [category, setCategory] = useState('tech')
   const [adding, setAdding] = useState(false)
+  const [refreshingTicker, setRefreshingTicker] = useState(null)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [search, setSearch] = useState('')
   const [removing, setRemoving] = useState(null)
 
-  useEffect(() => {
-    loadAssets()
-  }, [])
+  useEffect(() => { loadAssets() }, [])
 
   const loadAssets = async () => {
     try {
@@ -57,12 +57,22 @@ export function WatchlistModal({ onClose, onUpdated }) {
     if (!ticker.trim()) return setError('Ticker requis')
     setAdding(true)
     setError('')
+    setSuccess('')
     try {
-      await addAsset(ticker.trim().toUpperCase(), name.trim() || ticker.trim().toUpperCase(), category)
+      const t = ticker.trim().toUpperCase()
+      await addAsset(t, name.trim() || t, category)
+
+      // Déclenche le calcul du signal immédiatement
+      setRefreshingTicker(t)
+      await triggerRefresh(t)
+      setRefreshingTicker(null)
+
+      setSuccess(`${t} ajouté — signal en cours de calcul…`)
       setTicker('')
       setName('')
       await loadAssets()
       onUpdated()
+      setTimeout(() => setSuccess(''), 4000)
     } catch (e) {
       setError('Ticker déjà existant ou invalide')
     } finally {
@@ -72,6 +82,7 @@ export function WatchlistModal({ onClose, onUpdated }) {
 
   const handleRemove = async (t) => {
     setRemoving(t)
+    setError('')
     try {
       await removeAsset(t)
       await loadAssets()
@@ -83,10 +94,24 @@ export function WatchlistModal({ onClose, onUpdated }) {
     }
   }
 
+  const handleRefreshAll = async () => {
+    setRefreshingTicker('all')
+    setSuccess('')
+    try {
+      await triggerRefresh()
+      setSuccess('Refresh global lancé — résultats dans ~2 min')
+      setTimeout(() => setSuccess(''), 5000)
+      onUpdated()
+    } finally {
+      setRefreshingTicker(null)
+    }
+  }
+
   const handleSuggestion = (s) => {
     setTicker(s.ticker)
     setName(s.name)
     setCategory(s.category)
+    setError('')
   }
 
   const filtered = assets.filter(a =>
@@ -106,7 +131,16 @@ export function WatchlistModal({ onClose, onUpdated }) {
             <h2 className="modal-ticker" style={{ fontSize: '1.2rem' }}>Watchlist</h2>
             <p className="modal-name">{assets.length} actifs surveillés</p>
           </div>
-          <button className="btn-close" onClick={onClose}><X size={16} /></button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className={`btn-refresh ${refreshingTicker === 'all' ? 'spinning' : ''}`}
+              onClick={handleRefreshAll}
+              title="Recalculer tous les signaux"
+            >
+              <RefreshCw size={14} />
+            </button>
+            <button className="btn-close" onClick={onClose}><X size={16} /></button>
+          </div>
         </div>
 
         {/* Formulaire ajout */}
@@ -117,7 +151,7 @@ export function WatchlistModal({ onClose, onUpdated }) {
               className="wl-input"
               placeholder="Ticker (ex: AAPL, NESN.SW)"
               value={ticker}
-              onChange={e => setTicker(e.target.value.toUpperCase())}
+              onChange={e => { setTicker(e.target.value.toUpperCase()); setError('') }}
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
             />
             <input
@@ -140,13 +174,21 @@ export function WatchlistModal({ onClose, onUpdated }) {
               onClick={handleAdd}
               disabled={adding || !ticker.trim()}
             >
-              {adding ? <div className="loader" style={{ width: 14, height: 14 }} /> : <Plus size={16} />}
+              {adding
+                ? <div className="loader" style={{ width: 14, height: 14 }} />
+                : <Plus size={16} />}
               Ajouter
             </button>
           </div>
+
           {error && (
             <div className="wl-error">
               <AlertCircle size={13} /> {error}
+            </div>
+          )}
+          {success && (
+            <div className="wl-success">
+              ✅ {success}
             </div>
           )}
 
@@ -192,15 +234,25 @@ export function WatchlistModal({ onClose, onUpdated }) {
                           <span className="wl-item-ticker">{asset.ticker}</span>
                           <span className="wl-item-name">{asset.name}</span>
                         </div>
-                        <button
-                          className="wl-btn-remove"
-                          onClick={() => handleRemove(asset.ticker)}
-                          disabled={removing === asset.ticker}
-                        >
-                          {removing === asset.ticker
-                            ? <div className="loader" style={{ width: 12, height: 12 }} />
-                            : <Trash2 size={13} />}
-                        </button>
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button
+                            className={`wl-btn-remove ${refreshingTicker === asset.ticker ? 'spinning' : ''}`}
+                            onClick={() => triggerRefresh(asset.ticker).then(onUpdated)}
+                            title="Recalculer ce signal"
+                          >
+                            <RefreshCw size={12} />
+                          </button>
+                          <button
+                            className="wl-btn-remove"
+                            onClick={() => handleRemove(asset.ticker)}
+                            disabled={removing === asset.ticker}
+                            title="Supprimer"
+                          >
+                            {removing === asset.ticker
+                              ? <div className="loader" style={{ width: 12, height: 12 }} />
+                              : <Trash2 size={13} />}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
